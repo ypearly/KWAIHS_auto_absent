@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출결신고서 자동 생성 프로그램 가이드</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e67e22;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #dcdde1;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 28pt;
+            margin-bottom: 10px;
+        }
+
+        .intro {
+            font-size: 1.1em;
+            color: #666;
+            background: #f0f7ff;
+            padding: 15px;
+            border-left: 5px solid var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        h2 {
+            color: var(--secondary-color);
+            border-left: 6px solid var(--secondary-color);
+            padding-left: 15px;
+            margin-top: 40px;
+            font-size: 1.5em;
+        }
+
+        .step-box {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        code {
+            background: #2d3436;
+            color: #fab1a0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        pre {
+            background: #2d3436;
+            color: #dfe6e9;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .file-rename {
+            background-color: #eef2f7;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 5px solid #2c3e50;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .path-recommend {
+            background-color: #ebf8ff;
+            border: 1px solid #4299e1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #2b6cb0;
+        }
+
+        .important-step {
+            background-color: #fff5f5;
+            border: 1px solid #feb2b2;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .tip-badge {
+            display: inline-block;
+            background-color: #48bb78;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏫 업무자동화 가이드</h1>
+            <p>한글 출결신고서 자동 생성 프로그램 (v0.9)</p>
+        </header>
+
+        <div class="intro">
+            이 프로그램은 나이스(NEIS) 출결 현황을 기반으로 <strong>한글(HWP) 결석신고서를 자동 생성</strong>해주는 도구입니다.
+        </div>
+
+        <div class="path-recommend">
+            <strong>📂 작업 폴더 준비 (C:\work)</strong><br>
+            로컬 디스크(C:)에 <strong><code>C:\work</code></strong> 폴더를 만드세요.
+        </div>
+
+        <h2>1단계: 파이썬(Python) 환경 구축</h2>
+        <div class="step-box">
+            <ul>
+                <li><strong>파이썬 설치:</strong> <a href="https://www.python.org" target="_blank">python.org</a> 접속 후 최신 버전 설치</li>
+                <li><span class="highlight">⚠️ 필수 체크:</span> 설치 첫 화면 하단의 <strong>[Add Python to PATH]</strong>를 반드시 체크하세요.</li>
+                <li><strong>터미널 실행:</strong> 윈도우 검색창 <code>cmd</code> 입력 → <span class="highlight">마우스 우클릭 -> [관리자 권한으로 실행]</span></li>
+                <li><strong>라이브러리 설치:</strong> 아래 명령어를 복사하여 검은 창에 입력 후 엔터</li>
+            </ul>
+            <pre>pip install pandas openpyxl pywin32 holidays</pre>
+        </div>
+
+        <h2>2단계: 나이스(NEIS) 데이터 추출</h2>
+        <div class="step-box">
+            <div class="important-step">
+                <strong>① 사유 선입력:</strong> [학급담임] > [출결관리] > [일일출결관리]에서 결석생의 사유를 미리 입력하고 저장했는지 확인하세요.(사유를 미리 입력하지 않으면 자동화 생성효율이 떨어집니다.)
+            </div>
+
+            <ol>
+                <li><strong>메뉴 이동:</strong> [학급담임] > [출결현황및통계] > [학급별출결현황] > [월별] 선택 > 조회 > <strong>[월별 출결현황]</strong></li>
+                <li><strong>조회 설정:</strong> <code>월</code> 선택 후, <span class="highlight">[셀병합] 체크박스를 반드시 '해제'</span>하고 <code>조회</code>합니다.</li>
+                <li><strong>엑셀 추출:</strong> <strong>[엑셀다운로드]</strong> 클릭 후 파일 이름을 <span class="file-rename">월별 출결 현황.xlsx</span>로 변경하여 <code>C:\work</code>에 저장합니다.</li>
+            </ol>
+        </div>
+
+        <h2>3단계: 한글 양식 및 파일 배치</h2>
+        <div class="step-box">
+            <p><code>C:\work</code> 폴더에 아래 3개의 파일이 있어야 하며, 한글 양식은 아래 내용을 미리 수정해두세요.</p>
+            <ul>
+                <li><code>auto_attendance.py</code> (실행 코드)</li>
+                <li><strong><code>2026학년도 결석신고서.hwp</code> (한글 양식)</strong>
+                    <div class="important-step" style="background-color: #f0fff4; border-color: #c6f6d5; color: #2f855a;">
+                        <span class="tip-badge">필수 작업</span> 
+                        원본 양식 파일을 열어 <strong>[학과, 학년, 반]</strong> 정보는 미리 입력하고 저장해두세요. 성명과 번호, 날짜, 사유는 프로그램이 자동으로 채웁니다.
+                    </div>
+                </li>
+                <li><code>월별 출결 현황.xlsx</code> (나이스 파일)</li>
+            </ul>
+        </div>
+
+        <h2>4단계: 프로그램 실행</h2>
+        <div class="step-box">
+            <ol>
+                <li><strong>터미널 열기:</strong> 윈도우 검색창 <code>cmd</code> 입력 → <span class="highlight">마우스 우클릭 -> [관리자 권한으로 실행]</span></li>
+                <li><strong>폴더 이동 및 실행:</strong> 아래 명령어를 순서대로 입력합니다.</li>
+                <pre>cd c:\work
+python auto_attendance.py</pre>
+                <li><strong>정보 입력:</strong> 담임 성함과 재량휴업일(예: 05-20)을 입력하면 <code>output</code> 폴더에 결과물이 생성됩니다.</li>
+            </ol>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ 주의사항</h3>
+            <ul>
+                <li>실행 전 엑셀과 한글 파일이 열려 있다면 반드시 <strong>모두 닫아주세요.</strong>[cite: 1]</li>
+                <li>한글 보안 승인 창이 뜨면 <strong>[모두 허용]</strong>을 클릭하세요.[cite: 1]</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
